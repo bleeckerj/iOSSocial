@@ -32,6 +32,7 @@
 @synthesize fetchUserDataHandler;
 @synthesize loadPhotoHandler;
 @synthesize profilePictureURL;
+@synthesize username;
 
 - (id)init
 {
@@ -63,13 +64,26 @@
         //
         self.userID = [personDictionary objectForKey:@"id"];
         NSDictionary *usernameDictionary = [personDictionary objectForKey:@"username"];
+        NSString *iconserver = [personDictionary objectForKey:@"iconserver"];
+        if([iconserver intValue] > 0) {
+        self.profilePictureURL = [NSString stringWithFormat:@"http://farm%@.staticflickr.com/%@/buddyicons/%@.jpg",[personDictionary objectForKey:@"iconfarm"],[personDictionary objectForKey:@"iconserver"],self.userID];
+        } else {
+            self.profilePictureURL = @"http://www.flickr.com/images/buddyicon.gif";
+        }
         if (usernameDictionary) {
             self.alias = [usernameDictionary objectForKey:@"_content"];
+            self.username = self.alias;
         }
     } else {
         self.userID = [theUserDictionary objectForKey:@"id"];
+        NSString *iconserver = [theUserDictionary objectForKey:@"iconserver"];
+        if([iconserver intValue] > 0) {
+            self.profilePictureURL = [NSString stringWithFormat:@"http://farm%@.staticflickr.com/%@/buddyicons/%@.jpg",[theUserDictionary objectForKey:@"iconfarm"],[theUserDictionary objectForKey:@"iconserver"],self.userID];
+        } else {
+            self.profilePictureURL = @"http://www.flickr.com/images/buddyicon.gif";
+        }
         //self.profilePictureURL = [theUserDictionary objectForKey:@"profile_image_url_https"];
-        NSString *username = [theUserDictionary objectForKey:@"username"];
+        self.username = [theUserDictionary objectForKey:@"_content"];
         if (username) {
             self.alias = username;
         }

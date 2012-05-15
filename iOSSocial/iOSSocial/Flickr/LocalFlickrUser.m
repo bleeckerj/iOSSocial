@@ -36,6 +36,12 @@ static LocalFlickrUser *localFlickrUser = nil;
 @property(nonatomic, copy)      PhotoInfoDataHandler photoInfoDataHandler;
 @property(nonatomic, copy)      PhotoSizesDataHandler photoSizesDataHandler;
 @property(nonatomic, copy)      UserPhotosDataHandler userPhotosDataHandler;
+@property(nonatomic, copy)      RecentPhotosForFlickrUserHandler recentPhotosForFlickrUserHandler;
+@property(nonatomic, copy)      FetchFlickrUserHandler fetchFlickrUserHandler;
+@property(nonatomic, copy)      FlickrPeopleFindByUsernameHandler flickrPeopleFindByUsernameHandler;
+@property(nonatomic, copy)      FlickrPeopleFindByUserIDHandler flickrPeopleFindByUserIDHandler;
+@property(nonatomic, copy)      FlickrContactsGetListHandler flickrContactsGetListHandler;
+@property(nonatomic, copy)      FetchFlickrUserByUsernameHandler fetchFlickrUserByUsernameHandler;
 
 @end
 
@@ -53,6 +59,12 @@ static LocalFlickrUser *localFlickrUser = nil;
 @synthesize photoInfoDataHandler;
 @synthesize photoSizesDataHandler;
 @synthesize userPhotosDataHandler;
+@synthesize fetchFlickrUserHandler;
+@synthesize flickrPeopleFindByUsernameHandler;
+@synthesize flickrPeopleFindByUserIDHandler;
+@synthesize flickrContactsGetListHandler;
+@synthesize recentPhotosForFlickrUserHandler;
+@synthesize fetchFlickrUserByUsernameHandler;
 
 + (LocalFlickrUser *)localFlickrUser
 {
@@ -162,6 +174,10 @@ static LocalFlickrUser *localFlickrUser = nil;
 {
     self.userPhotosDataHandler = completionHandler;
     
+    // I guess oauth1 cannot use authorizedURL 
+    // (e.g.  NSURL *url = [self authorizedURL:[NSURL URLWithString:urlString]];)
+    //and has to marshall those oauthParams below
+    
     NSString *urlString = [NSString stringWithFormat:@"http://api.flickr.com/services/rest/?method=flickr.activity.userPhotos&format=json&nojsoncallback=1"];
     
     NSURL *url = [NSURL URLWithString:urlString];
@@ -192,6 +208,163 @@ static LocalFlickrUser *localFlickrUser = nil;
             if (self.userPhotosDataHandler) {
                 self.userPhotosDataHandler(dictionary, nil);
                 self.userPhotosDataHandler = nil;
+            }
+        }
+    }];
+}
+
+/** I added this */
+- (void)getRecentPhotosForFlickrUser:(FlickrUser *)flickrUser andCompletionHandler:(RecentPhotosForFlickrUserHandler)completionHandler
+{
+    self.recentPhotosForFlickrUserHandler = completionHandler;
+    
+    // I guess oauth1 cannot use authorizedURL 
+    // (e.g.  NSURL *url = [self authorizedURL:[NSURL URLWithString:urlString]];)
+    //and has to marshall those oauthParams below    
+    
+    NSString *urlString = [NSString stringWithFormat:@"http://api.flickr.com/services/rest/?method=flickr.people.getPhotos&user_id=%@&format=json&nojsoncallback=1&per_page=15&extras=description,date_taken,tags,views", [flickrUser userID]];
+    
+    NSURL *url = [NSURL URLWithString:urlString];
+    
+    iOSSRequest *request = [[iOSSRequest alloc] initWithURL:url  
+                                                 parameters:nil 
+                                              requestMethod:iOSSRequestMethodGET];
+    
+    NSMutableDictionary *oauthParams = [NSMutableDictionary dictionary];
+    [oauthParams setObject:[[Flickr sharedService] apiKey] forKey:kASIOAuthConsumerKey];
+    [oauthParams setObject:[[Flickr sharedService] apiSecret] forKey:kASIOAuthConsumerSecret];
+    [oauthParams setObject:[self oAuthAccessToken] forKey:kASIOAuthTokenKey];
+    [oauthParams setObject:kASIOAuthSignatureMethodHMAC_SHA1 forKey:kASIOAuthSignatureMethodKey];
+    [oauthParams setObject:@"1.0" forKey:kASIOAuthVersionKey];
+    [oauthParams setObject:self.auth.tokenSecret forKey:kASIOAuthTokenSecretKey];
+    
+    request.oauth_params = oauthParams;
+    
+    [request performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
+        if (error) {
+            if (self.recentPhotosForFlickrUserHandler) {
+                self.recentPhotosForFlickrUserHandler(nil, error);
+                self.recentPhotosForFlickrUserHandler = nil;
+            }
+        } else {
+            NSDictionary *dictionary = [Flickr JSONFromData:responseData];
+            
+            if (self.recentPhotosForFlickrUserHandler) {
+                self.recentPhotosForFlickrUserHandler(dictionary, nil);
+                self.recentPhotosForFlickrUserHandler = nil;
+            }
+        }
+    }];
+}
+
+- (void)flickrPeopleFindByUsername:(NSString *)mUsername
+              andCompletionHandler:(FlickrPeopleFindByUsernameHandler)completionHandler
+{
+    self.flickrPeopleFindByUsernameHandler = completionHandler;
+    
+    // I guess oauth1 cannot use authorizedURL 
+    // (e.g.  NSURL *url = [self authorizedURL:[NSURL URLWithString:urlString]];)
+    //and has to marshall those oauthParams below    
+    
+    NSString *urlString = [NSString stringWithFormat:@"http://api.flickr.com/services/rest/?method=flickr.people.findByUsername&username=%@&format=json&nojsoncallback=1", mUsername];
+
+    NSURL *url = [NSURL URLWithString:urlString];
+ 
+    iOSSRequest *request = [[iOSSRequest alloc] initWithURL:url  
+                                                 parameters:nil 
+                                              requestMethod:iOSSRequestMethodGET];
+    
+    NSMutableDictionary *oauthParams = [NSMutableDictionary dictionary];
+    [oauthParams setObject:[[Flickr sharedService] apiKey] forKey:kASIOAuthConsumerKey];
+    [oauthParams setObject:[[Flickr sharedService] apiSecret] forKey:kASIOAuthConsumerSecret];
+    [oauthParams setObject:[self oAuthAccessToken] forKey:kASIOAuthTokenKey];
+    [oauthParams setObject:kASIOAuthSignatureMethodHMAC_SHA1 forKey:kASIOAuthSignatureMethodKey];
+    [oauthParams setObject:@"1.0" forKey:kASIOAuthVersionKey];
+    [oauthParams setObject:self.auth.tokenSecret forKey:kASIOAuthTokenSecretKey];
+    
+    request.oauth_params = oauthParams;
+    
+    
+    [request performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error_1) {
+        if (error_1) {
+            if (self.flickrPeopleFindByUsernameHandler) {
+                self.flickrPeopleFindByUsernameHandler(nil, error_1);
+                self.flickrPeopleFindByUsernameHandler = nil;
+            }
+        } else {
+            if (responseData) {
+                NSDictionary *dictionary = [Flickr JSONFromData:responseData];
+                NSString *aUserID = [[dictionary objectForKey:@"user"] objectForKey:@"id"];
+                
+                [self fetchFlickrUserByID:aUserID andCompletionHandler:^(FlickrUser *flickrUser, NSError *error_2) {
+                    if(error_2) {
+                        if( self.flickrPeopleFindByUsernameHandler) {
+                            self.flickrPeopleFindByUsernameHandler(nil, error_2);
+                            self.flickrPeopleFindByUsernameHandler =  nil;
+                        }
+                    } else {
+                        //[[FlickrUser alloc]initWithDictionary:[dictionary objectForKey:@"data"]];
+                        //FlickrUser *flickrUser = [[FlickrUser alloc]initWithDictionary:dictionary];
+                        //call completion handler with error
+                        NSLog(@"%@ %@",flickrUser, error_2);
+                        if(self.flickrPeopleFindByUsernameHandler) {
+                            self.flickrPeopleFindByUsernameHandler(flickrUser, error_2);
+                            self.flickrPeopleFindByUsernameHandler = nil;
+                        }
+                    }
+                }];        
+                
+            } // if(responseData)
+        } //else
+    }]; // performRequestWithHandler   
+} // method          
+
+
+- (void)fetchFlickrUserByID:(NSString *)aUserID
+       andCompletionHandler:(FetchFlickrUserHandler)completionHandler
+{
+    self.fetchFlickrUserHandler = completionHandler;
+    
+    
+    // I guess oauth1 cannot use authorizedURL 
+    // (e.g.  NSURL *url = [self authorizedURL:[NSURL URLWithString:urlString]];)
+    //and has to marshall those oauthParams below
+    NSString *urlString = [NSString stringWithFormat:@"http://api.flickr.com/services/rest/?method=flickr.people.getInfo&user_id=%@&format=json&nojsoncallback=1", aUserID];
+    
+    NSURL *url = [NSURL URLWithString:urlString];
+    
+    iOSSRequest *request = [[iOSSRequest alloc] initWithURL:url  
+                                                 parameters:nil 
+                                              requestMethod:iOSSRequestMethodGET];
+    
+    NSMutableDictionary *oauthParams = [NSMutableDictionary dictionary];
+    [oauthParams setObject:[[Flickr sharedService] apiKey] forKey:kASIOAuthConsumerKey];
+    [oauthParams setObject:[[Flickr sharedService] apiSecret] forKey:kASIOAuthConsumerSecret];
+    [oauthParams setObject:[self oAuthAccessToken] forKey:kASIOAuthTokenKey];
+    [oauthParams setObject:kASIOAuthSignatureMethodHMAC_SHA1 forKey:kASIOAuthSignatureMethodKey];
+    [oauthParams setObject:@"1.0" forKey:kASIOAuthVersionKey];
+    [oauthParams setObject:self.auth.tokenSecret forKey:kASIOAuthTokenSecretKey];
+    
+    request.oauth_params = oauthParams;
+
+    
+    [request performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
+        if (error) {
+            if (self.fetchFlickrUserHandler) {
+                self.fetchFlickrUserHandler(nil, error);
+                self.fetchFlickrUserHandler = nil;
+            }
+        } else {
+            if (responseData) {
+                NSDictionary *dictionary = [Flickr JSONFromData:responseData];
+                //[[FlickrUser alloc]initWithDictionary:[dictionary objectForKey:@"data"]];
+                FlickrUser *flickrUser = [[FlickrUser alloc]initWithDictionary:dictionary];
+                //call completion handler with error
+                if (self.fetchFlickrUserHandler) {
+                    self.fetchFlickrUserHandler(flickrUser, nil);
+                    self.fetchFlickrUserHandler = nil;
+                }
+                
             }
         }
     }];
@@ -290,14 +463,14 @@ static LocalFlickrUser *localFlickrUser = nil;
     if (self.currentElementData == nil) {
         self.currentElementData = [[NSMutableString alloc] init];
     }
-	
+    
     [self.currentElementData appendString:string];
 }
 
 - (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName
   namespaceURI:(NSString *)namespaceURI
  qualifiedName:(NSString *)qName {
-
+    
     if ( [elementName isEqualToString:@"photoid"]) {
         if (self.postPhotoDataHandler) {
             NSString *photoID = [self.currentElementData stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]];
@@ -305,7 +478,7 @@ static LocalFlickrUser *localFlickrUser = nil;
             self.postPhotoDataHandler = nil;
         }
     }
-
+    
     self.currentElementData = nil;
 }
 
@@ -315,7 +488,7 @@ static LocalFlickrUser *localFlickrUser = nil;
  andCompletionHandler:(PostPhotoDataHandler)completionHandler
 {
     self.postPhotoDataHandler = completionHandler;
-
+    
     NSString *urlString = [NSString stringWithFormat:@"http://api.flickr.com/services/upload/"];
     
     NSURL *url = [NSURL URLWithString:urlString];
@@ -360,11 +533,11 @@ static LocalFlickrUser *localFlickrUser = nil;
 - (void)fetchLocalUserDataWithCompletionHandler:(FetchUserDataHandler)completionHandler
 {
     self.fetchUserDataHandler = completionHandler;
-
+    
     NSString *urlString = [NSString stringWithFormat:@"http://api.flickr.com/services/rest/?method=flickr.people.getInfo&user_id=%@&format=json&nojsoncallback=1", self.userID];
     
     NSURL *url = [NSURL URLWithString:urlString];
-
+    
     iOSSRequest *request = [[iOSSRequest alloc] initWithURL:url  
                                                  parameters:nil 
                                               requestMethod:iOSSRequestMethodGET];
@@ -378,7 +551,7 @@ static LocalFlickrUser *localFlickrUser = nil;
     [oauthParams setObject:[self oAuthAccessTokenSecret] forKey:kASIOAuthTokenSecretKey];
     
     request.oauth_params = oauthParams;
-
+    
     [request performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
         if (error) {
             if (self.fetchUserDataHandler) {
@@ -397,6 +570,13 @@ static LocalFlickrUser *localFlickrUser = nil;
     }];
 }
 
+
++ (NSString*)getPhotoSourceURLFromID:(NSString *)photoID fromServerID:(NSString *)serverID fromFarmID:(NSString *)farmID fromSecret:(NSString *)secret
+{
+    NSString *result = [NSString stringWithFormat:@"http://farm%@.staticflickr.com/%@/%@_%@.jpg", farmID, serverID,photoID,secret];
+    return result;
+}
+
 - (UIViewController*)authenticateFromViewController:(UIViewController*)vc 
                               withCompletionHandler:(AuthenticationHandler)completionHandler;
 {
@@ -410,32 +590,32 @@ static LocalFlickrUser *localFlickrUser = nil;
         if (nil == self.auth) {
             [self commonInit:nil];
         }
-
+        
         outVC = [[Flickr sharedService] authorizeFromViewController:vc 
                                                             forAuth:self.auth 
                                                 andKeychainItemName:self.keychainItemName 
                                                     andCookieDomain:@"flickr.com" 
                                               withCompletionHandler:^(GTMOAuthAuthentication *theAuth, NSDictionary *userInfo, NSError *error) {
-            self.auth = (GTMOAuthAuthenticationWithAdditions*)theAuth;
-            if (error) {
-                if (self.authenticationHandler) {
-                    self.authenticationHandler(error);
-                    self.authenticationHandler = nil;
-                }
-            } else {
-                if (userInfo) {
-                    NSDictionary *user = [userInfo objectForKey:@"user"];
-                    self.userDictionary = user;
-                }
-
-                [self fetchLocalUserDataWithCompletionHandler:^(NSError *error) {
-                    if (self.authenticationHandler) {
-                        self.authenticationHandler(error);
-                        self.authenticationHandler = nil;
-                    }
-                }];
-            }
-        }];
+                                                  self.auth = (GTMOAuthAuthenticationWithAdditions*)theAuth;
+                                                  if (error) {
+                                                      if (self.authenticationHandler) {
+                                                          self.authenticationHandler(error);
+                                                          self.authenticationHandler = nil;
+                                                      }
+                                                  } else {
+                                                      if (userInfo) {
+                                                          NSDictionary *user = [userInfo objectForKey:@"user"];
+                                                          self.userDictionary = user;
+                                                      }
+                                                      
+                                                      [self fetchLocalUserDataWithCompletionHandler:^(NSError *error) {
+                                                          if (self.authenticationHandler) {
+                                                              self.authenticationHandler(error);
+                                                              self.authenticationHandler = nil;
+                                                          }
+                                                      }];
+                                                  }
+                                              }];
     } else {
         [self fetchLocalUserDataWithCompletionHandler:^(NSError *error) {
             if (!error) {

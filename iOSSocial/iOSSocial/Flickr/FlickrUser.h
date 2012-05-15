@@ -22,7 +22,8 @@
 
 @property(nonatomic, readonly, retain)  NSString *userID;   // User identifier.
 @property(nonatomic, readonly, retain)  NSString *alias;    // The user's alias
-@property(nonatomic, readonly, retain)  NSString *profilePictureURL;    // The user's last name
+@property(nonatomic, readonly, retain)  NSString *profilePictureURL;    
+@property(nonatomic, readonly, retain)  NSString *username;
 @property(nonatomic, copy)              FetchUserDataHandler fetchUserDataHandler;
 
 // Asynchronously load the users's photo. Error will be nil on success.

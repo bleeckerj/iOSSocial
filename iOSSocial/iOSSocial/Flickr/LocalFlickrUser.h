@@ -25,6 +25,12 @@ typedef void(^PostPhotoDataHandler)(NSString *photoID, NSError *error);
 typedef void(^PhotoInfoDataHandler)(NSDictionary *photoInfo, NSError *error);
 typedef void(^UserPhotosDataHandler)(NSDictionary *photos, NSError *error);
 typedef void(^PhotoSizesDataHandler)(NSDictionary *photoInfo, NSError *error);
+typedef void(^RecentPhotosForFlickrUserHandler)(NSDictionary *photos, NSError *error);
+typedef void(^FetchFlickrUserHandler)(FlickrUser *flickrUser, NSError *error);
+typedef void(^FlickrPeopleFindByUsernameHandler)(FlickrUser *flickrUser, NSError *error);
+typedef void(^FlickrPeopleFindByUserIDHandler)(FlickrUser *flickrUser, NSError *error);
+typedef void(^FlickrContactsGetListHandler)(NSDictionary *contacts, NSError *error);
+typedef void(^FetchFlickrUserByUsernameHandler)(NSDictionary *data, NSError *error);
 
 @interface LocalFlickrUser : FlickrUser <iOSSocialLocalUserProtocol, NSXMLParserDelegate> 
 
@@ -67,5 +73,8 @@ typedef void(^PhotoSizesDataHandler)(NSDictionary *photoInfo, NSError *error);
 
 - (void)getInfoForPhotoWithId:(NSString*)photoID andCompletionHandler:(PhotoInfoDataHandler)completionHandler;
 - (void)getPhotoSizesForPhotoWithId:(NSString*)photoID andCompletionHandler:(PhotoSizesDataHandler)completionHandler;
-
+- (void)getRecentPhotosForFlickrUser:(FlickrUser*)flickrUser andCompletionHandler:(RecentPhotosForFlickrUserHandler)completionHandler;
+- (void)fetchFlickerUserByID:(NSString *)mUserID andCompletionHandler:(FlickrPeopleFindByUserIDHandler)completionHandler;
+- (void)flickrPeopleFindByUsername:(NSString *)mUsername andCompletionHandler:(FlickrPeopleFindByUsernameHandler)completionHandler;
++ (NSString*)getPhotoSourceURLFromID:(NSString *)photoID fromServerID:(NSString *)serverID fromFarmID:(NSString *)farmID fromSecret:(NSString *)secret;
 @end

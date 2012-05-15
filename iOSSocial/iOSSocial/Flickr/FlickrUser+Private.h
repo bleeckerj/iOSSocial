@@ -19,6 +19,6 @@
 @property(nonatomic, readwrite, retain) NSDictionary *userDictionary;
 @property(nonatomic, readwrite, retain) NSString *userID;
 @property(nonatomic, readwrite, retain) NSString *alias;
-@property(nonatomic, readwrite, retain)  NSString *profilePictureURL;    // The user's last name
-
+@property(nonatomic, readwrite, retain)  NSString *profilePictureURL;   
+@property(nonatomic, readwrite, retain) NSString *username;
 @end
